@@ -1,0 +1,122 @@
+{
+    "metadata": {
+        "project": "XRefer Cluster Analysis",
+        "version": "1.0",
+        "generated_at": "2025-03-15T12:34:56Z",
+        "sha256": "3f5aeabb4c39f09a1463f521c4f59c071fd88e3ab3582be6f5e5dcb4ba57abcd",
+        "base_address": "0x4000000",
+        "binary_description": "Short overview of the malware's function and behavior.",
+        "binary_report": "Longer LLM-based text that describes how the malware encrypts files, sets persistence, and communicates with a C2 server. Includes technical details."
+    },
+    "clusters": [
+        {
+            "id": "cluster.id.0001",
+            "name": "Main Ransomware Module",
+            "description": "Handles top-level encryption logic and orchestrates submodules.",
+            "subcluster_ids": ["cluster.id.0002"],
+            "nodes": [
+                {
+                    "id": "N1",
+                    "label": "encrypt_files()",
+                    "description": "Core routine to traverse and encrypt user files.",
+                    "properties": {
+                        "type": "function",
+                        "address": "0x400080",
+                        "calls": ["N2", "N3"]
+                    }
+                },
+                {
+                    "id": "N2",
+                    "label": "generate_key()",
+                    "description": "Generates an AES key in memory, can expand to RSA if needed.",
+                    "properties": {
+                        "type": "function",
+                        "address": "0x4000A0",
+                        "calls": []
+                    }
+                },
+                {
+                    "id": "N3",
+                    "label": "init_file_pipeline()",
+                    "description": "Entry point for the subcluster, references cluster.id.0002.",
+                    "properties": {
+                        "type": "function",
+                        "address": "0x4000F0",
+                        "calls": []
+                    }
+                }
+            ],
+            "edges": [
+                { "source": "N1", "target": "N2", "relationship": "calls" },
+                { "source": "N1", "target": "N3", "relationship": "calls" }
+            ],
+            "cluster_refs": {
+                "N3": "cluster.id.0002"
+            },
+            "artifacts": {
+                "apis": [
+                    "CreateFileW",
+                    "WriteFile",
+                    "CloseHandle",
+                    "CryptEncrypt"
+                ],
+                "strings": [
+                    "RANSOM_NOTE.txt",
+                    "AES256_KEY"
+                ],
+                "libraries": [
+                    "advapi32.dll",
+                    "kernel32.dll"
+                ],
+                "capa_matches": [
+                    "capa_rule_file_encryption",
+                    "capa_rule_crypto_key_generation"
+                ]
+            },
+            "api_trace": [
+                "CreateFileW(...), WriteFile(...), CloseHandle(...)",
+                "CryptAcquireContext(...), CryptEncrypt(...)"
+            ]
+        },
+        {
+            "id": "cluster.id.0002",
+            "name": "File Pipeline Subcluster",
+            "description": "Responsible for reading and writing disk files, possibly hooking them for encryption.",
+            "subcluster_ids": [],
+            "nodes": [
+                {
+                    "id": "N4",
+                    "label": "read_files()",
+                    "description": "Enumerates target directories and opens files for encryption.",
+                    "properties": {
+                        "type": "function",
+                        "address": "0x400200",
+                        "calls": []
+                    }
+                }
+            ],
+            "edges": [],
+            "cluster_refs": {},
+            "artifacts": {
+                "apis": [
+                    "CryptAcquireContext",
+                    "CryptEncrypt"
+                ],
+                "strings": [
+                    "*.doc",
+                    "*.pdf",
+                    "*.xls"
+                ],
+                "libraries": [
+                    "advapi32.dll"
+                ],
+                "capa_matches": [
+                    "capa_rule_crypto_key_usage"
+                ]
+            },
+            "api_trace": [
+                "CryptAcquireContext(...), CryptEncrypt(...)"
+            ]
+        }
+    ]
+} 

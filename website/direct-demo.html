@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XRefer Direct Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #2B65EC;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        .content {
+            display: flex;
+            flex: 1;
+        }
+        .sidebar {
+            width: 300px;
+            background-color: #f5f5f5;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #cy {
+            flex: 1;
+            background-color: white;
+        }
+        .controls {
+            padding: 10px;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .info-panel {
+            margin-bottom: 20px;
+        }
+        .info-panel h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .cluster-item {
+            padding: 8px 12px;
+            background-color: #e9e9e9;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .cluster-item:hover {
+            background-color: #d5d5d5;
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #2B65EC;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin-right: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <!-- Cytoscape Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.23.0/dist/cytoscape.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Loading XRefer visualization...</div>
+    </div>
+
+    <div class="header">
+        <h1>XRefer Direct Demo Visualization</h1>
+        <div id="binary-info">Demo Binary Analysis</div>
+    </div>
+
+    <div class="content">
+        <div class="sidebar">
+            <div class="info-panel">
+                <h3>Clusters</h3>
+                <div id="cluster-list"></div>
+            </div>
+
+            <div class="info-panel">
+                <h3>Selected Node</h3>
+                <div id="selected-info">
+                    <p>Click on a node to see details</p>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h3>Artifacts</h3>
+                <div id="artifacts-container">
+                    <div>
+                        <h4>APIs</h4>
+                        <div id="apis-list"></div>
+                    </div>
+                    <div>
+                        <h4>Strings</h4>
+                        <div id="strings-list"></div>
+                    </div>
+                    <div>
+                        <h4>Libraries</h4>
+                        <div id="libraries-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="controls">
+                <div>
+                    <button id="zoom-in">Zoom In</button>
+                    <button id="zoom-out">Zoom Out</button>
+                    <button id="reset-view">Reset View</button>
+                </div>
+                <div>
+                    <select id="layout-select">
+                        <option value="circle">Circle</option>
+                        <option value="grid">Grid</option>
+                        <option value="dagre">Dagre</option>
+                        <option value="random">Random</option>
+                    </select>
+                    <button id="apply-layout">Apply Layout</button>
+                </div>
+            </div>
+            <div id="cy"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log("DOM loaded, initializing demo visualization");
+            
+            // References to DOM elements
+            const cyContainer = document.getElementById('cy');
+            const loadingElement = document.getElementById('loading');
+            const clusterListElement = document.getElementById('cluster-list');
+            const selectedInfoElement = document.getElementById('selected-info');
+            const apisListElement = document.getElementById('apis-list');
+            const stringsListElement = document.getElementById('strings-list');
+            const librariesListElement = document.getElementById('libraries-list');
+            
+            // Helper function to escape HTML
+            function escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+            
+            // Function to update the selected node info
+            function updateSelectedInfo(node) {
+                let html = '';
+                
+                if (node) {
+                    const data = node.data();
+                    html += `<h4>${escapeHtml(data.label || data.id)}</h4>`;
+                    
+                    if (data.description) {
+                        html += `<p>${escapeHtml(data.description)}</p>`;
+                    }
+                    
+                    html += `<dl>`;
+                    html += `<dt>ID:</dt><dd>${escapeHtml(data.id)}</dd>`;
+                    html += `<dt>Type:</dt><dd>${escapeHtml(data.type || 'Unknown')}</dd>`;
+                    
+                    if (data.address) {
+                        html += `<dt>Address:</dt><dd>${escapeHtml(data.address)}</dd>`;
+                    }
+                    
+                    html += `</dl>`;
+                } else {
+                    html = `<p>Click on a node to see details</p>`;
+                }
+                
+                selectedInfoElement.innerHTML = html;
+            }
+            
+            // Function to update the artifacts panel
+            function updateArtifacts(node) {
+                // Clear existing artifacts
+                apisListElement.innerHTML = '';
+                stringsListElement.innerHTML = '';
+                librariesListElement.innerHTML = '';
+                
+                if (!node || !node.data('artifacts')) {
+                    return;
+                }
+                
+                const artifacts = node.data('artifacts');
+                
+                // Update APIs
+                if (artifacts.apis && artifacts.apis.length > 0) {
+                    let apiHtml = '<ul>';
+                    artifacts.apis.forEach(api => {
+                        apiHtml += `<li>${escapeHtml(api)}</li>`;
+                    });
+                    apiHtml += '</ul>';
+                    apisListElement.innerHTML = apiHtml;
+                }
+                
+                // Update Strings
+                if (artifacts.strings && artifacts.strings.length > 0) {
+                    let stringsHtml = '<ul>';
+                    artifacts.strings.forEach(str => {
+                        stringsHtml += `<li>${escapeHtml(str)}</li>`;
+                    });
+                    stringsHtml += '</ul>';
+                    stringsListElement.innerHTML = stringsHtml;
+                }
+                
+                // Update Libraries
+                if (artifacts.libraries && artifacts.libraries.length > 0) {
+                    let libHtml = '<ul>';
+                    artifacts.libraries.forEach(lib => {
+                        libHtml += `<li>${escapeHtml(lib)}</li>`;
+                    });
+                    libHtml += '</ul>';
+                    librariesListElement.innerHTML = libHtml;
+                }
+            }
+            
+            try {
+                // Load the data
+                console.log("Fetching demo data...");
+                const response = await fetch('data/demo_cluster_data.json');
+                if (!response.ok) {
+                    throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log("Data loaded:", data);
+                
+                // Transform data for Cytoscape
+                const elements = {
+                    nodes: [],
+                    edges: []
+                };
+                
+                // Process clusters
+                data.clusters.forEach(cluster => {
+                    console.log(`Processing cluster: ${cluster.id} - ${cluster.name}`);
+                    
+                    // Add cluster node
+                    elements.nodes.push({
+                        data: {
+                            id: cluster.id,
+                            label: cluster.name || cluster.id,
+                            description: cluster.description || '',
+                            type: 'cluster',
+                            artifacts: cluster.artifacts || {}
+                        }
+                    });
+                    
+                    // Populate cluster list
+                    const clusterItem = document.createElement('div');
+                    clusterItem.className = 'cluster-item';
+                    clusterItem.textContent = cluster.name || cluster.id;
+                    clusterItem.setAttribute('data-id', cluster.id);
+                    clusterItem.addEventListener('click', () => {
+                        const node = cy.getElementById(cluster.id);
+                        if (node.length > 0) {
+                            cy.fit(node);
+                            cy.center(node);
+                            updateSelectedInfo(node);
+                            updateArtifacts(node);
+                        }
+                    });
+                    clusterListElement.appendChild(clusterItem);
+                    
+                    // Add function nodes
+                    if (cluster.nodes && Array.isArray(cluster.nodes)) {
+                        cluster.nodes.forEach(node => {
+                            elements.nodes.push({
+                                data: {
+                                    id: node.id,
+                                    label: node.label || node.id,
+                                    description: node.description || '',
+                                    type: 'function',
+                                    address: node.properties ? node.properties.address : null,
+                                    parent: cluster.id
+                                }
+                            });
+                        });
+                    }
+                });
+                
+                // Add edges
+                data.clusters.forEach(cluster => {
+                    // Add subcluster edges
+                    if (cluster.subcluster_ids) {
+                        cluster.subcluster_ids.forEach(targetId => {
+                            elements.edges.push({
+                                data: {
+                                    id: `${cluster.id}-${targetId}`,
+                                    source: cluster.id,
+                                    target: targetId,
+                                    relationship: 'contains'
+                                }
+                            });
+                        });
+                    }
+                    
+                    // Add cluster references
+                    if (cluster.cluster_refs) {
+                        Object.entries(cluster.cluster_refs).forEach(([nodeId, targetClusterId]) => {
+                            elements.edges.push({
+                                data: {
+                                    id: `${nodeId}-${targetClusterId}-ref`,
+                                    source: nodeId,
+                                    target: targetClusterId,
+                                    relationship: 'references'
+                                }
+                            });
+                        });
+                    }
+                    
+                    // Add function-level edges
+                    if (cluster.edges) {
+                        cluster.edges.forEach(edge => {
+                            elements.edges.push({
+                                data: {
+                                    id: `${edge.source}-${edge.target}`,
+                                    source: edge.source,
+                                    target: edge.target,
+                                    relationship: edge.relationship || 'calls'
+                                }
+                            });
+                        });
+                    }
+                });
+                
+                console.log("Processed elements:", elements);
+                
+                // Initialize Cytoscape
+                const cy = cytoscape({
+                    container: cyContainer,
+                    elements: elements,
+                    style: [
+                        {
+                            selector: 'node',
+                            style: {
+                                'label': 'data(label)',
+                                'text-valign': 'center',
+                                'text-halign': 'center',
+                                'color': '#fff',
+                                'text-outline-width': 2,
+                                'text-outline-color': '#555',
+                                'font-size': '12px'
+                            }
+                        },
+                        {
+                            selector: 'node[type="cluster"]',
+                            style: {
+                                'shape': 'roundrectangle',
+                                'background-color': '#2B65EC',
+                                'padding': '10px',
+                                'text-wrap': 'ellipsis',
+                                'text-max-width': '100px',
+                                'width': 120,
+                                'height': 60
+                            }
+                        },
+                        {
+                            selector: 'node[type="function"]',
+                            style: {
+                                'shape': 'ellipse',
+                                'background-color': '#66B2FF',
+                                'width': 30,
+                                'height': 30,
+                                'font-size': '10px'
+                            }
+                        },
+                        {
+                            selector: 'edge',
+                            style: {
+                                'width': 2,
+                                'line-color': '#999',
+                                'target-arrow-color': '#999',
+                                'target-arrow-shape': 'triangle',
+                                'curve-style': 'bezier',
+                                'label': 'data(relationship)',
+                                'font-size': '10px'
+                            }
+                        },
+                        {
+                            selector: 'edge[relationship="contains"]',
+                            style: {
+                                'line-style': 'dashed',
+                                'line-color': '#2B65EC',
+                                'target-arrow-color': '#2B65EC'
+                            }
+                        },
+                        {
+                            selector: 'edge[relationship="references"]',
+                            style: {
+                                'line-color': '#F7A65A',
+                                'target-arrow-color': '#F7A65A'
+                            }
+                        },
+                        {
+                            selector: 'edge[relationship="calls"]',
+                            style: {
+                                'line-color': '#66B2FF',
+                                'target-arrow-color': '#66B2FF'
+                            }
+                        },
+                        {
+                            selector: '.highlighted',
+                            style: {
+                                'background-color': '#F7A65A',
+                                'line-color': '#F7A65A',
+                                'target-arrow-color': '#F7A65A'
+                            }
+                        }
+                    ],
+                    layout: {
+                        name: 'circle'
+                    }
+                });
+                
+                // Set up event handlers
+                cy.on('tap', 'node', function(event) {
+                    const node = event.target;
+                    console.log('Node tapped:', node.id(), node.data());
+                    updateSelectedInfo(node);
+                    updateArtifacts(node);
+                });
+                
+                // Set up control handlers
+                document.getElementById('zoom-in').addEventListener('click', () => {
+                    cy.zoom(cy.zoom() * 1.2);
+                });
+                
+                document.getElementById('zoom-out').addEventListener('click', () => {
+                    cy.zoom(cy.zoom() / 1.2);
+                });
+                
+                document.getElementById('reset-view').addEventListener('click', () => {
+                    cy.fit();
+                });
+                
+                document.getElementById('apply-layout').addEventListener('click', () => {
+                    const layout = document.getElementById('layout-select').value;
+                    
+                    let layoutConfig = {
+                        name: layout,
+                        animate: true,
+                        animationDuration: 500
+                    };
+                    
+                    if (layout === 'dagre') {
+                        layoutConfig = {
+                            name: 'dagre',
+                            rankDir: 'TB',
+                            rankSep: 100,
+                            nodeSep: 50,
+                            padding: 30
+                        };
+                    }
+                    
+                    cy.layout(layoutConfig).run();
+                });
+                
+                // Hide loading screen when ready
+                cy.ready(() => {
+                    console.log("Cytoscape ready:", cy.elements().length, "elements");
+                    setTimeout(() => {
+                        loadingElement.style.display = 'none';
+                    }, 500);
+                });
+                
+            } catch (error) {
+                console.error("Error initializing visualization:", error);
+                alert(`Failed to initialize: ${error.message}`);
+                loadingElement.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,288 @@
+{
+  "metadata": {
+    "project": "XRefer Cluster Analysis",
+    "version": "1.0",
+    "generated_at": "2025-03-15T12:34:56Z",
+    "sha256": "3f5aeabb4c39f09a1463f521c4f59c071fd88e3ab3582be6f5e5dcb4ba57abcd",
+    "base_address": "0x4000000",
+    "binary_description": "This malware is a sophisticated ransomware that encrypts user files and demands payment for decryption.",
+    "binary_report": "The malware begins by establishing persistence through registry modifications. It then scans the filesystem for valuable user data, encrypts files using AES-256 with a unique key per infection, and communicates with a command and control server to transmit encryption keys. The ransomware displays a custom message demanding payment in cryptocurrency and provides instructions for contacting the attackers."
+  },
+  "clusters": [
+    {
+      "id": "cluster.id.0001",
+      "name": "Main Ransomware Module",
+      "description": "Handles top-level encryption logic and orchestrates submodules.",
+      "subcluster_ids": ["cluster.id.0002", "cluster.id.0003"],
+      "nodes": [
+        {
+          "id": "N1",
+          "label": "encrypt_files()",
+          "description": "Core routine to traverse and encrypt user files.",
+          "properties": {
+            "type": "function",
+            "address": "0x400080",
+            "calls": ["N2", "N3"]
+          }
+        },
+        {
+          "id": "N2",
+          "label": "generate_key()",
+          "description": "Generates an AES key in memory, can expand to RSA if needed.",
+          "properties": {
+            "type": "function",
+            "address": "0x4000A0",
+            "calls": []
+          }
+        },
+        {
+          "id": "N3",
+          "label": "init_file_pipeline()",
+          "description": "Entry point for the file processing subcluster.",
+          "properties": {
+            "type": "function",
+            "address": "0x4000F0",
+            "calls": []
+          }
+        }
+      ],
+      "edges": [
+        { "source": "N1", "target": "N2", "relationship": "calls" },
+        { "source": "N1", "target": "N3", "relationship": "calls" }
+      ],
+      "cluster_refs": {
+        "N3": "cluster.id.0002"
+      },
+      "artifacts": {
+        "apis": [
+          "CreateFileW",
+          "WriteFile",
+          "CloseHandle",
+          "CryptEncrypt"
+        ],
+        "strings": [
+          "RANSOM_NOTE.txt",
+          "AES256_KEY",
+          "Your files have been encrypted"
+        ],
+        "libraries": [
+          "advapi32.dll", 
+          "kernel32.dll"
+        ],
+        "capa_matches": [
+          "encrypt data using RC4 PRGA",
+          "encrypt data using AES"
+        ]
+      },
+      "api_trace": [
+        "CreateFileW(...), WriteFile(...), CloseHandle(...)",
+        "CryptAcquireContext(...), CryptEncrypt(...)"
+      ]
+    },
+    {
+      "id": "cluster.id.0002",
+      "name": "File Pipeline Subcluster",
+      "description": "Responsible for reading and writing disk files, possibly hooking them for encryption.",
+      "subcluster_ids": [],
+      "nodes": [
+        {
+          "id": "N4",
+          "label": "read_files()",
+          "description": "Enumerates target directories and opens files for encryption.",
+          "properties": {
+            "type": "function",
+            "address": "0x400200",
+            "calls": ["N5"]
+          }
+        },
+        {
+          "id": "N5",
+          "label": "process_file()",
+          "description": "Processes individual files for encryption.",
+          "properties": {
+            "type": "function",
+            "address": "0x400250",
+            "calls": []
+          }
+        }
+      ],
+      "edges": [
+        { "source": "N4", "target": "N5", "relationship": "calls" }
+      ],
+      "cluster_refs": {},
+      "artifacts": {
+        "apis": [
+          "FindFirstFileW",
+          "FindNextFileW",
+          "ReadFile"
+        ],
+        "strings": [
+          "*.doc",
+          "*.pdf",
+          "*.xls",
+          "*.jpg"
+        ],
+        "libraries": [
+          "kernel32.dll"
+        ],
+        "capa_matches": [
+          "enumerate files"
+        ]
+      },
+      "api_trace": [
+        "FindFirstFileW(...), FindNextFileW(...), ReadFile(...)"
+      ]
+    },
+    {
+      "id": "cluster.id.0003",
+      "name": "C2 Communication Module",
+      "description": "Handles communication with command and control servers.",
+      "subcluster_ids": [],
+      "nodes": [
+        {
+          "id": "N6",
+          "label": "connect_to_c2()",
+          "description": "Establishes connection to C2 server.",
+          "properties": {
+            "type": "function",
+            "address": "0x400300",
+            "calls": ["N7"]
+          }
+        },
+        {
+          "id": "N7",
+          "label": "send_encryption_key()",
+          "description": "Transmits encryption key to C2 server.",
+          "properties": {
+            "type": "function",
+            "address": "0x400350",
+            "calls": []
+          }
+        }
+      ],
+      "edges": [
+        { "source": "N6", "target": "N7", "relationship": "calls" }
+      ],
+      "cluster_refs": {},
+      "artifacts": {
+        "apis": [
+          "InternetOpenA",
+          "InternetConnectA",
+          "HttpSendRequestA"
+        ],
+        "strings": [
+          "http://malicious-c2-server.com/report",
+          "POST",
+          "User-Agent: Mozilla/5.0"
+        ],
+        "libraries": [
+          "wininet.dll"
+        ],
+        "capa_matches": [
+          "communicate via HTTP",
+          "send data"
+        ]
+      },
+      "api_trace": [
+        "InternetOpenA(...), InternetConnectA(...), HttpSendRequestA(...)"
+      ]
+    },
+    {
+      "id": "cluster.id.0004",
+      "name": "Persistence Module",
+      "description": "Establishes persistence mechanisms to ensure the malware runs at startup.",
+      "subcluster_ids": [],
+      "nodes": [
+        {
+          "id": "N8",
+          "label": "set_registry_keys()",
+          "description": "Modifies registry to ensure malware runs at startup.",
+          "properties": {
+            "type": "function",
+            "address": "0x400400",
+            "calls": []
+          }
+        }
+      ],
+      "edges": [],
+      "cluster_refs": {},
+      "artifacts": {
+        "apis": [
+          "RegOpenKeyExA",
+          "RegSetValueExA",
+          "RegCloseKey"
+        ],
+        "strings": [
+          "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
+          "RansomService"
+        ],
+        "libraries": [
+          "advapi32.dll"
+        ],
+        "capa_matches": [
+          "persist via Registry Run key"
+        ]
+      },
+      "api_trace": [
+        "RegOpenKeyExA(...), RegSetValueExA(...), RegCloseKey(...)"
+      ]
+    },
+    {
+      "id": "cluster.id.0005",
+      "name": "Ransom Note Display",
+      "description": "Creates and displays the ransom note to the victim.",
+      "subcluster_ids": [],
+      "nodes": [
+        {
+          "id": "N9",
+          "label": "create_ransom_note()",
+          "description": "Generates the ransom note text file.",
+          "properties": {
+            "type": "function",
+            "address": "0x400500",
+            "calls": ["N10"]
+          }
+        },
+        {
+          "id": "N10",
+          "label": "display_message()",
+          "description": "Shows ransom message to the user.",
+          "properties": {
+            "type": "function",
+            "address": "0x400550",
+            "calls": []
+          }
+        }
+      ],
+      "edges": [
+        { "source": "N9", "target": "N10", "relationship": "calls" }
+      ],
+      "cluster_refs": {},
+      "artifacts": {
+        "apis": [
+          "CreateFileW",
+          "WriteFile",
+          "MessageBoxA"
+        ],
+        "strings": [
+          "YOUR FILES HAVE BEEN ENCRYPTED",
+          "Send 0.5 Bitcoin to the following address:",
+          "1A2B3C4D5E6F7G8H9I0J",
+          "Contact us at: ransom@example.com"
+        ],
+        "libraries": [
+          "kernel32.dll",
+          "user32.dll"
+        ],
+        "capa_matches": [
+          "create file",
+          "display message"
+        ]
+      },
+      "api_trace": [
+        "CreateFileW(...), WriteFile(...)",
+        "MessageBoxA(...)"
+      ]
+    }
+  ]
+}

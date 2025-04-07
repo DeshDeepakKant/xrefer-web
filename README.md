@@ -1,59 +1,60 @@
-# XRefer: The Binary Navigator
+# XRefer HTML Visualizer
 
-<p align="center">
-  <img src="images/xrefer_logo_main.png" alt="XRefer Logo" width="400">
-</p>
+A sophisticated web-based visualization interface for XRefer binary analysis data, offering interactive exploration of malware structures, execution paths, and artifacts.
 
+## Features
 
-XRefer is a Python-based plugin for the [IDA Pro disassembler](https://hex-rays.com/ida-pro), a tool used for analyzing software. The plugin provides a custom navigation interface within IDA. It examines execution paths from entry points, breaks down the binary into clusters of related functions, and highlights downstream behaviors and artifacts for quicker insights. XRefer can incorporate external data (e.g., API traces, capa results, user-defined xrefs) and provides path graphs for richer context. It integrates with Google's Gemini model to produce natural language descriptions of code relationships and behaviors. Additionally, XRefer can provide cluster based labels for functions, aiming to accelerate the manual static analysis process.
+- **Interactive Graph Visualization**: Explore complex binary relationships with an interactive graph interface
+- **Cluster Analysis View**: Examine function clusters and their relationships
+- **Path Graph Analysis**: Visualize code execution paths with both full and simplified views
+- **Function Artifact Display**: Inspect APIs, strings, and other artifacts associated with binary functions
+- **Advanced Malware Demo**: Includes advanced visualization of a sophisticated ransomware sample
 
-More can be read about XRefer in the accompanying [blog post](https://cloud.google.com/blog/topics/threat-intelligence/xrefer-gemini-assisted-binary-navigator).
+## Quick Start
 
-## Installation
+```bash
+# Clone the repository
+git clone https://github.com/DeshDeepakKant/xrefer-web.git
+cd xrefer-web
 
-1. **Clone the Repository:**
-  ```
-  git clone https://github.com/mandiant/xrefer.git
-  ```
+# Set up demo environment (creates venv and installs dependencies)
+./demo_setup.sh
 
-2. **Install the Plugin:**
-- Inside the cloned repository, a `plugins` directory contains the plugin code.
-- Copy the contents of `plugins/` into your IDA Pro `plugins` directory:
+# Run the demo server
+python3 run_demo.py --port 8889
 ```
-cp -r xrefer/plugins/* /path/to/IDA/plugins/
+
+Visit `http://localhost:8889` in your browser to explore the visualization.
+
+## Visualization Pages
+
+- **Main Demo**: http://localhost:8889/ - Overview of basic functionality
+- **Direct Demo**: http://localhost:8889/direct-demo.html - Focused cluster visualization
+- **Complex Malware Analysis**: http://localhost:8889/complex-malware-demo.html - Advanced malware visualization
+- **Extreme Visualization**: http://localhost:8889/extreme-malware-visualization.html - Detailed XRefer-style interface
+- **Path Graph**: http://localhost:8889/pathgraph-view.html - Execution path visualization
+- **Malware Functions**: http://localhost:8889/malware-functions.html - Function artifact analysis
+
+## Repository Structure
+
+```
+.
+├── website/              # Web visualization interface
+│   ├── css/              # CSS stylesheets
+│   ├── js/               # JavaScript functionality
+│   │   ├── data.js       # Data processing utilities
+│   │   ├── graph.js      # Graph visualization
+│   │   ├── ui.js         # User interface components
+│   │   └── main.js       # Application initialization
+│   ├── data/             # Sample data for visualization
+│   └── server.py         # Local development server
+├── run_demo.py           # Demo launcher script
+├── demo_setup.sh         # Environment setup script
+├── capture_screenshot.py # Utility for capturing screenshots
+├── DEMO_OVERVIEW.md      # Demo architecture overview
+└── DEMO_INSTRUCTIONS.md  # Detailed usage instructions
 ```
 
-3. **Install Dependencies:**
-From the main directory of the cloned repository:
-  ```
-  pip install -r requirements.txt
-  ```
+## License
 
-Note: The `asciinet` dependency requires Java to be installed. OpenJDK or any JRE should work. Ensure `java` is accessible on your system's PATH.
-
-**License:** XRefer is released under the Apache License 2.0. See [LICENSE](LICENSE) for details.
-
-## Usage
-
-After installation, restart IDA. You will find XRefer's menu entries under `Edit -> XRefer`. Some options will also be available under the right click context menu.
-
-- **Configuration:**  
-Go to `Edit -> XRefer -> Configure` to adjust LLM settings, paths, exclusions and other settings.
-
-- **Starting Analysis:**  
-Run analysis either from the default entry point `Edit -> XRefer -> Run Analysis -> Default Entrypoint` or specify a custom entry point `Edit -> XRefer -> Run Analysis -> Custom Entrypoint` in the case of a DLL/library for example.
-
-- **External Data & Exclusions:**  
-XRefer can ingest external data sources, including API trace files from dynamic analysis sandboxes VMRay and Cape. It can also ingest capa analysis outputs, and user-defined indirect xrefs for enhanced path resolution. These inputs help enrich the analysis with additional context. Manage default paths for these resources from the configuration dialog and fine-tune their usage by enabling or disabling exclusions, as well as adding or removing exclusion entries to focus on the most relevant artifacts.
-
-For more in-depth instructions and usage scenarios, please refer to the [Usage Documentation](docs/usage.md).
-
-![x](/images/navigation.gif)
-
-## Contributing
-
-Contributions, bug reports, and feature requests are welcome. Please open an issue or submit a pull request with a clear description of the proposed changes.
-
-## Important Privacy Notice
-
-XRefer's LLM-based features, when enabled, send portions of analyzed data (e.g., APIs, strings, library references, and function relationships) to external servers, such as Google's Gemini API or other configured LLM endpoints. These external services process the information to generate natural language descriptions and insights. If you are analyzing sensitive binaries or prefer not to share data outside your local environment, you can disable all LLM features in the settings, preventing any external communication. Please consult Google Gemini's [Terms of Service](https://cloud.google.com/gemini/docs/discover/data-governance)  before use.
+This project is licensed under the MIT License - see the LICENSE file for details.

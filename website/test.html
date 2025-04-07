@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cytoscape.js Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #cy {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+        }
+        .controls {
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+    </style>
+    <!-- Cytoscape Library -->
+    <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.23.0/dist/cytoscape.min.js"></script>
+</head>
+<body>
+    <h1>Cytoscape.js Simple Test</h1>
+    <div class="controls">
+        <button id="circle-layout">Circle Layout</button>
+        <button id="grid-layout">Grid Layout</button>
+    </div>
+    <div id="cy"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded, initializing test graph");
+            
+            // Simple test data
+            const elements = {
+                nodes: [
+                    { data: { id: 'main', label: 'Main Module', type: 'cluster' } },
+                    { data: { id: 'data', label: 'Data Processing', type: 'cluster' } },
+                    { data: { id: 'network', label: 'Network Module', type: 'cluster' } },
+                    { data: { id: 'ui', label: 'UI Module', type: 'cluster' } },
+                    { data: { id: 'crypto', label: 'Crypto Module', type: 'cluster' } }
+                ],
+                edges: [
+                    { data: { id: 'main-data', source: 'main', target: 'data', relationship: 'uses' } },
+                    { data: { id: 'main-network', source: 'main', target: 'network', relationship: 'uses' } },
+                    { data: { id: 'data-crypto', source: 'data', target: 'crypto', relationship: 'uses' } },
+                    { data: { id: 'main-ui', source: 'main', target: 'ui', relationship: 'uses' } }
+                ]
+            };
+            
+            console.log("Creating cytoscape instance with test data");
+            
+            // Initialize Cytoscape
+            const cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: elements,
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'label': 'data(label)',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'color': '#fff',
+                            'text-outline-width': 2,
+                            'text-outline-color': '#555',
+                            'background-color': '#2B65EC',
+                            'shape': 'roundrectangle',
+                            'width': 120,
+                            'height': 60,
+                            'font-size': '12px'
+                        }
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'width': 2,
+                            'line-color': '#999',
+                            'target-arrow-color': '#999',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'label': 'data(relationship)',
+                            'font-size': '10px'
+                        }
+                    }
+                ],
+                layout: {
+                    name: 'circle'
+                }
+            });
+            
+            console.log("Cytoscape instance created, elements:", cy.elements().length);
+            
+            // Layout buttons
+            document.getElementById('circle-layout').addEventListener('click', function() {
+                cy.layout({ name: 'circle' }).run();
+            });
+            
+            document.getElementById('grid-layout').addEventListener('click', function() {
+                cy.layout({ name: 'grid' }).run();
+            });
+            
+            // Log when ready
+            cy.ready(function() {
+                console.log("Cytoscape is ready");
+                console.log("Nodes:", cy.nodes().length);
+                console.log("Edges:", cy.edges().length);
+            });
+        });
+    </script>
+</body>
+</html> 
