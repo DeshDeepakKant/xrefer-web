@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XRefer - API Call Timeline</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: monospace;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background-color: #222;
+            color: #e0e0e0;
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-links span {
+            margin: 0 10px;
+            color: #0c0;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .summary-header {
+            font-size: 0.9em;
+            color: #ccc;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .highlight-red {
+            color: #f55;
+        }
+        
+        .highlight-green {
+            color: #5f5;
+        }
+        
+        .highlight-blue {
+            color: #55f;
+        }
+        
+        .highlight-yellow {
+            color: #ff5;
+        }
+        
+        .highlight-cyan {
+            color: #5ff;
+        }
+        
+        .timeline-container {
+            position: relative;
+            margin-top: 20px;
+            padding-left: 200px;
+        }
+        
+        .timeline-ruler {
+            display: flex;
+            width: 100%;
+            margin-bottom: 10px;
+            padding-left: 20px;
+        }
+        
+        .timeline-tick {
+            position: relative;
+            height: 8px;
+            border-left: 1px solid #444;
+            flex-grow: 1;
+        }
+        
+        .timeline-tick:nth-child(5n+1) {
+            height: 12px;
+            border-left: 1px solid #666;
+        }
+        
+        .timeline-tick:nth-child(10n+1) {
+            height: 16px;
+            border-left: 1px solid #888;
+        }
+        
+        .timeline-tick:first-child {
+            border-left: none;
+        }
+        
+        .timestamp {
+            position: absolute;
+            top: 16px;
+            left: 0;
+            transform: translateX(-50%);
+            font-size: 0.7em;
+            color: #888;
+            white-space: nowrap;
+        }
+        
+        .timeline-event {
+            position: relative;
+            margin-bottom: 8px;
+            display: flex;
+        }
+        
+        .event-time {
+            position: absolute;
+            left: -200px;
+            width: 180px;
+            text-align: right;
+            padding-right: 20px;
+            color: #888;
+            font-size: 0.9em;
+        }
+        
+        .event-line {
+            position: absolute;
+            left: 0;
+            top: 10px;
+            width: 100%;
+            height: 1px;
+            background-color: #333;
+            z-index: 0;
+        }
+        
+        .event-marker {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #5f5;
+            border-radius: 50%;
+            transform: translateX(-5px) translateY(5px);
+            z-index: 1;
+        }
+        
+        .event-details {
+            background-color: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 3px;
+            padding: 10px;
+            margin-left: 20px;
+            max-width: 500px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .event-api {
+            font-weight: bold;
+            color: #5f5;
+            margin-bottom: 5px;
+        }
+        
+        .event-params {
+            color: #ccc;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .event-result {
+            color: #888;
+            font-size: 0.85em;
+        }
+        
+        .event-from {
+            margin-top: 5px;
+            font-size: 0.8em;
+            color: #f55;
+        }
+        
+        .event-category {
+            display: inline-block;
+            font-size: 0.7em;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .category-file {
+            background-color: #253;
+            color: #5f5;
+        }
+        
+        .category-network {
+            background-color: #235;
+            color: #5ff;
+        }
+        
+        .category-registry {
+            background-color: #523;
+            color: #f5f;
+        }
+        
+        .category-process {
+            background-color: #552;
+            color: #ff5;
+        }
+        
+        .category-memory {
+            background-color: #522;
+            color: #f55;
+        }
+        
+        .highlight-event .event-details {
+            border-color: #5f5;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        
+        .filter-bar {
+            display: flex;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        
+        .filter-option {
+            padding: 5px 10px;
+            margin-right: 10px;
+            background-color: #333;
+            border: 1px solid #444;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+        
+        .filter-option.active {
+            background-color: #2a2a2a;
+            border-color: #5f5;
+            color: #5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav-links">
+            <span>[ XRefer ]</span>
+            <span>[ API Timeline ]</span>
+            <span>[ Binary: sample_malware.exe ]</span>
+            <span>[ H for help ]</span>
+        </div>
+    </div>
+    
+    <div class="content">
+        <div class="summary-header">
+            TOTAL API CALLS = <span class="highlight-green">156</span> over <span class="highlight-blue">8.45</span> seconds
+        </div>
+        
+        <div class="filter-bar">
+            <div class="filter-option active" data-category="all">All Categories</div>
+            <div class="filter-option" data-category="file">File System</div>
+            <div class="filter-option" data-category="network">Network</div>
+            <div class="filter-option" data-category="registry">Registry</div>
+            <div class="filter-option" data-category="process">Process/Thread</div>
+            <div class="filter-option" data-category="memory">Memory</div>
+        </div>
+        
+        <div class="timeline-container">
+            <div class="timeline-ruler">
+                <div class="timeline-tick"><span class="timestamp">00:00.000</span></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"><span class="timestamp">00:01.000</span></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"><span class="timestamp">00:02.000</span></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"></div>
+                <div class="timeline-tick"><span class="timestamp">00:03.000</span></div>
+            </div>
+            
+            <!-- Timeline Events -->
+            <div class="timeline-event" data-category="process">
+                <div class="event-time">00:00.021</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 1%;"></div>
+                <div class="event-details" style="margin-left: 1%;">
+                    <span class="event-category category-process">PROCESS</span>
+                    <div class="event-api">kernel32.GetCurrentProcess</div>
+                    <div class="event-params">( )</div>
+                    <div class="event-result">Returns: 0xffffffff</div>
+                    <div class="event-from">From: sub_10000890</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event highlight-event" data-category="registry">
+                <div class="event-time">00:00.154</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 5%;"></div>
+                <div class="event-details" style="margin-left: 5%;">
+                    <span class="event-category category-registry">REGISTRY</span>
+                    <div class="event-api">advapi32.RegOpenKeyExW</div>
+                    <div class="event-params">(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_ALL_ACCESS, 0x00562a18)</div>
+                    <div class="event-result">Returns: 0x0 (ERROR_SUCCESS)</div>
+                    <div class="event-from">From: sub_100007e0</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="registry">
+                <div class="event-time">00:00.235</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 8%;"></div>
+                <div class="event-details" style="margin-left: 8%;">
+                    <span class="event-category category-registry">REGISTRY</span>
+                    <div class="event-api">advapi32.RegSetValueExW</div>
+                    <div class="event-params">(0x00000020, "StartupService", 0, REG_SZ, 0x0012f888, 42)</div>
+                    <div class="event-result">Returns: 0x0 (ERROR_SUCCESS)</div>
+                    <div class="event-from">From: sub_100007e0</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="file">
+                <div class="event-time">00:00.367</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 12%;"></div>
+                <div class="event-details" style="margin-left: 12%;">
+                    <span class="event-category category-file">FILE</span>
+                    <div class="event-api">kernel32.CreateFileW</div>
+                    <div class="event-params">("C:\\Windows\\System32\\svchost.exe", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)</div>
+                    <div class="event-result">Returns: 0x00000024 (valid handle)</div>
+                    <div class="event-from">From: sub_10000c70</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="file">
+                <div class="event-time">00:00.489</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 16%;"></div>
+                <div class="event-details" style="margin-left: 16%;">
+                    <span class="event-category category-file">FILE</span>
+                    <div class="event-api">kernel32.GetFileSize</div>
+                    <div class="event-params">(0x00000024, NULL)</div>
+                    <div class="event-result">Returns: 0x00062400 (401408)</div>
+                    <div class="event-from">From: sub_10000afc0</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="file">
+                <div class="event-time">00:00.502</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 17%;"></div>
+                <div class="event-details" style="margin-left: 17%;">
+                    <span class="event-category category-file">FILE</span>
+                    <div class="event-api">kernel32.ReadFile</div>
+                    <div class="event-params">(0x00000024, 0x00240000, 401408, 0x0012fcd0, NULL)</div>
+                    <div class="event-result">Returns: TRUE (1)</div>
+                    <div class="event-from">From: sub_10000afc0</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event highlight-event" data-category="network">
+                <div class="event-time">00:01.567</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 32%;"></div>
+                <div class="event-details" style="margin-left: 32%;">
+                    <span class="event-category category-network">NETWORK</span>
+                    <div class="event-api">wininet.InternetOpenW</div>
+                    <div class="event-params">("WordPressAgent", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0)</div>
+                    <div class="event-result">Returns: 0x00620040 (valid handle)</div>
+                    <div class="event-from">From: sub_10000860</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="network">
+                <div class="event-time">00:01.734</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 35%;"></div>
+                <div class="event-details" style="margin-left: 35%;">
+                    <span class="event-category category-network">NETWORK</span>
+                    <div class="event-api">wininet.InternetConnectW</div>
+                    <div class="event-params">(0x00620040, "server.example[.]com", 80, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0)</div>
+                    <div class="event-result">Returns: 0x00620088 (valid handle)</div>
+                    <div class="event-from">From: sub_10000860</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="network">
+                <div class="event-time">00:01.987</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 40%;"></div>
+                <div class="event-details" style="margin-left: 40%;">
+                    <span class="event-category category-network">NETWORK</span>
+                    <div class="event-api">wininet.HttpOpenRequestW</div>
+                    <div class="event-params">(0x00620088, "POST", "/wp-json/api/wordpress/reg", NULL, NULL, NULL, INTERNET_FLAG_RELOAD | INTERNET_FLAG_NO_CACHE_WRITE, 0)</div>
+                    <div class="event-result">Returns: 0x006200d0 (valid handle)</div>
+                    <div class="event-from">From: sub_10000860</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="memory">
+                <div class="event-time">00:02.134</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 43%;"></div>
+                <div class="event-details" style="margin-left: 43%;">
+                    <span class="event-category category-memory">MEMORY</span>
+                    <div class="event-api">kernel32.VirtualAlloc</div>
+                    <div class="event-params">(NULL, 0x00010000, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE)</div>
+                    <div class="event-result">Returns: 0x00A90000</div>
+                    <div class="event-from">From: sub_100028044</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="process">
+                <div class="event-time">00:02.513</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 50%;"></div>
+                <div class="event-details" style="margin-left: 50%;">
+                    <span class="event-category category-process">PROCESS</span>
+                    <div class="event-api">kernel32.CreateThread</div>
+                    <div class="event-params">(NULL, 0, 0x00108760, 0x00560034, 0, 0x0012fe18)</div>
+                    <div class="event-result">Returns: 0x00000028 (valid handle)</div>
+                    <div class="event-from">From: sub_10000c70</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="registry">
+                <div class="event-time">00:02.845</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 57%;"></div>
+                <div class="event-details" style="margin-left: 57%;">
+                    <span class="event-category category-registry">REGISTRY</span>
+                    <div class="event-api">advapi32.RegCreateKeyExW</div>
+                    <div class="event-params">(HKEY_LOCAL_MACHINE, "SYSTEM\\CurrentControlSet\\Services", 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, 0x0012fe70, NULL)</div>
+                    <div class="event-result">Returns: 0x5 (ERROR_ACCESS_DENIED)</div>
+                    <div class="event-from">From: sub_10000890</div>
+                </div>
+            </div>
+            
+            <div class="timeline-event" data-category="file">
+                <div class="event-time">00:03.001</div>
+                <div class="event-line"></div>
+                <div class="event-marker" style="left: 60%;"></div>
+                <div class="event-details" style="margin-left: 60%;">
+                    <span class="event-category category-file">FILE</span>
+                    <div class="event-api">kernel32.CreateDirectoryW</div>
+                    <div class="event-params">("C:\\ProgramData\\Microsoft\\Windows\\SystemData\\BlackCat", NULL)</div>
+                    <div class="event-result">Returns: TRUE (1)</div>
+                    <div class="event-from">From: sub_100007e0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filter functionality
+            const filterOptions = document.querySelectorAll('.filter-option');
+            const timelineEvents = document.querySelectorAll('.timeline-event');
+            
+            filterOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Update active class
+                    filterOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const category = this.getAttribute('data-category');
+                    
+                    // Filter events
+                    timelineEvents.forEach(event => {
+                        if (category === 'all' || event.getAttribute('data-category') === category) {
+                            event.style.display = 'block';
+                        } else {
+                            event.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XRefer - Path Graph View</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: monospace;
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: #222;
+            color: #e0e0e0;
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .title-bar {
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-links span {
+            margin: 0 10px;
+            color: #0c0;
+        }
+        
+        .content {
+            display: flex;
+            height: calc(100vh - 41px);
+        }
+        
+        .path-container {
+            flex: 1;
+            display: flex;
+        }
+        
+        .path-graph {
+            flex: 1;
+            background-color: #1a1a1a;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .simplified-graph {
+            flex: 1;
+            background-color: #1a1a1a;
+            position: relative;
+            overflow: hidden;
+            border-left: 1px solid #444;
+        }
+        
+        .header-text {
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+        
+        .header-subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+            margin-top: -10px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #444;
+        }
+        
+        .simplification-note {
+            text-align: center;
+            padding: 10px;
+            color: #f55;
+            font-size: 0.9em;
+        }
+        
+        .node {
+            position: absolute;
+            background-color: #333;
+            border: 1px solid #555;
+            padding: 8px;
+            text-align: center;
+            min-width: 100px;
+            font-size: 0.9em;
+            z-index: 2;
+        }
+        
+        .node.entry {
+            background-color: #2a2a2a;
+            border-color: #ccc;
+        }
+        
+        .node.target {
+            background-color: #552222;
+            border-color: #f55;
+            color: #f55;
+        }
+        
+        .node.api {
+            background-color: #223333;
+            border-color: #5ff;
+            color: #5ff;
+        }
+        
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        path {
+            stroke: #444;
+            stroke-width: 1.5;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+        
+        .entry-label {
+            border: 1px solid #ccc;
+            background-color: #2a2a2a;
+            color: #fff;
+            padding: 5px 10px;
+            display: inline-block;
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title-bar">
+            <span>XRefer - Navigator</span>
+        </div>
+        <div class="nav-links">
+            <span>[ XRefer ]</span>
+            <span>[ func ea: 0x5f9360 ]</span>
+            <span>[ path graph ]</span>
+            <span>[ func_name: sub_5f9360 ]</span>
+            <span>[ ESC to go back ]</span>
+        </div>
+    </div>
+    
+    <div class="content">
+        <div class="path-container">
+            <div class="path-graph">
+                <div class="header-text">PATHS (entry_points) -> kernel32.GetComputerNameW)</div>
+                <div class="header-subtitle">--------------------------------------------------------------</div>
+                
+                <svg id="full-graph-svg">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#444" />
+                        </marker>
+                    </defs>
+                </svg>
+                
+                <!-- Nodes for the full graph -->
+                <div class="node entry" style="top: 100px; left: 50%; transform: translateX(-50%);">
+                    ENTRYPOINT<br>0x5e96f0
+                </div>
+                
+                <div class="node" style="top: 180px; left: 50%; transform: translateX(-50%);">
+                    0x5784b0
+                </div>
+                
+                <div class="node" style="top: 260px; left: 30%; transform: translateX(-50%);">
+                    0x5a23c0
+                </div>
+                
+                <div class="node" style="top: 340px; left: 20%; transform: translateX(-50%);">
+                    0x585890
+                </div>
+                
+                <div class="node" style="top: 420px; left: 15%; transform: translateX(-50%);">
+                    0x590f60
+                </div>
+                
+                <div class="node" style="top: 500px; left: 15%; transform: translateX(-50%);">
+                    0x5851c0
+                </div>
+                
+                <div class="node" style="top: 340px; left: 40%; transform: translateX(-50%);">
+                    0x5fe0a0
+                </div>
+                
+                <div class="node" style="top: 340px; left: 60%; transform: translateX(-50%);">
+                    0x59f6f0
+                </div>
+                
+                <div class="node" style="top: 340px; left: 80%; transform: translateX(-50%);">
+                    0x605200
+                </div>
+                
+                <div class="node" style="top: 340px; left: 95%; transform: translateX(-50%);">
+                    0x59a900
+                </div>
+                
+                <div class="node" style="top: 420px; left: 40%; transform: translateX(-50%);">
+                    0x58ec70
+                </div>
+                
+                <div class="node" style="top: 420px; left: 60%; transform: translateX(-50%);">
+                    0x5decC0
+                </div>
+                
+                <div class="node" style="top: 420px; left: 80%; transform: translateX(-50%);">
+                    0x5c2360
+                </div>
+                
+                <div class="node target" style="top: 580px; left: 50%; transform: translateX(-50%);">
+                    0x5f9360
+                </div>
+                
+                <div class="node" style="top: 660px; left: 45%; transform: translateX(-50%);">
+                    0x6fa138
+                </div>
+                
+                <div class="node api" style="top: 740px; left: 50%; transform: translateX(-50%);">
+                    kernel32.GetComputerNameW
+                </div>
+            </div>
+            
+            <div class="simplified-graph">
+                <div class="header-text">SIMPLIFIED PATHS (entry_points) -> kernel32.GetComputerNameW)</div>
+                <div class="header-subtitle">--------------------------------------------------------------</div>
+                <div class="simplification-note">Graph reduced from 15 to 12 nodes (20.0% reduction)</div>
+                
+                <svg id="simplified-graph-svg">
+                    <defs>
+                        <marker id="arrowhead-simple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#444" />
+                        </marker>
+                    </defs>
+                </svg>
+                
+                <!-- Nodes for the simplified graph -->
+                <div class="node entry" style="top: 100px; left: 50%; transform: translateX(-50%);">
+                    ENTRYPOINT<br>0x5e96f0
+                </div>
+                
+                <div class="node" style="top: 200px; left: 50%; transform: translateX(-50%);">
+                    0x5784b0
+                </div>
+                
+                <div class="node" style="top: 300px; left: 35%; transform: translateX(-50%);">
+                    0x5a23c0
+                </div>
+                
+                <div class="node" style="top: 400px; left: 20%; transform: translateX(-50%);">
+                    0x590f60
+                </div>
+                
+                <div class="node" style="top: 400px; left: 40%; transform: translateX(-50%);">
+                    0x59f6f0
+                </div>
+                
+                <div class="node" style="top: 400px; left: 60%; transform: translateX(-50%);">
+                    0x605200
+                </div>
+                
+                <div class="node" style="top: 400px; left: 80%; transform: translateX(-50%);">
+                    0x59a900
+                </div>
+                
+                <div class="node" style="top: 500px; left: 30%; transform: translateX(-50%);">
+                    0x58ec70
+                </div>
+                
+                <div class="node" style="top: 500px; left: 50%; transform: translateX(-50%);">
+                    0x5decc0
+                </div>
+                
+                <div class="node" style="top: 500px; left: 70%; transform: translateX(-50%);">
+                    0x5c2360
+                </div>
+                
+                <div class="node target" style="top: 600px; left: 50%; transform: translateX(-50%);">
+                    0x5f9360
+                </div>
+                
+                <div class="node" style="top: 700px; left: 50%; transform: translateX(-50%);">
+                    0x6fa138
+                </div>
+                
+                <div class="node api" style="top: 800px; left: 50%; transform: translateX(-50%);">
+                    kernel32.GetComputerNameW
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Draw connections for full graph
+            const fullSvg = document.getElementById('full-graph-svg');
+            const fullNodes = document.querySelectorAll('.path-graph .node');
+            
+            // Draw vertical connections
+            for (let i = 0; i < fullNodes.length - 1; i++) {
+                if (i === 1) {
+                    // Branch out from second node
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+1]);
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+5]);
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+6]);
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+7]);
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+8]);
+                } else if (i === 2) {
+                    // Connect third node to its children
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+1]);
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+3]);
+                } else if (i === 3) {
+                    // Connect from node 4 to node 5
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+1]);
+                } else if (i >= 5 && i <= 12) {
+                    // Connect all middle nodes to the target node
+                    if (i !== 8) {
+                        connectNodes(fullSvg, fullNodes[i], fullNodes[13]);
+                    }
+                } else if (i === 13) {
+                    // Connect target node to following node
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+1]);
+                } else if (i === 14) {
+                    // Connect last node to API
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+1]);
+                } else {
+                    // Default connection to next node
+                    connectNodes(fullSvg, fullNodes[i], fullNodes[i+1]);
+                }
+            }
+            
+            // Add some cross connections for complexity
+            connectNodes(fullSvg, fullNodes[10], fullNodes[12]);
+            connectNodes(fullSvg, fullNodes[11], fullNodes[12]);
+            connectNodes(fullSvg, fullNodes[9], fullNodes[11]);
+            
+            // Draw connections for simplified graph
+            const simpleSvg = document.getElementById('simplified-graph-svg');
+            const simpleNodes = document.querySelectorAll('.simplified-graph .node');
+            
+            // Simple vertical connections
+            for (let i = 0; i < simpleNodes.length - 1; i++) {
+                if (i === 1) {
+                    // Branch out from second node
+                    connectNodes(simpleSvg, simpleNodes[i], simpleNodes[i+1]);
+                } else if (i === 2) {
+                    // Connect third node to its children
+                    connectNodes(simpleSvg, simpleNodes[i], simpleNodes[i+1]);
+                    connectNodes(simpleSvg, simpleNodes[i], simpleNodes[i+2]);
+                    connectNodes(simpleSvg, simpleNodes[i], simpleNodes[i+3]);
+                    connectNodes(simpleSvg, simpleNodes[i], simpleNodes[i+4]);
+                } else if (i >= 3 && i <= 9) {
+                    // Connect all middle nodes to the target node
+                    connectNodes(simpleSvg, simpleNodes[i], simpleNodes[10]);
+                } else if (i === 10) {
+                    // Connect target node to following node
+                    connectNodes(simpleSvg, simpleNodes[i], simpleNodes[i+1]);
+                } else if (i === 11) {
+                    // Connect last node to API
+                    connectNodes(simpleSvg, simpleNodes[i], simpleNodes[i+1]);
+                } else {
+                    // Default connection to next node
+                    connectNodes(simpleSvg, simpleNodes[i], simpleNodes[i+1]);
+                }
+            }
+            
+            // Add cross connections
+            connectNodes(simpleSvg, simpleNodes[7], simpleNodes[9]);
+            connectNodes(simpleSvg, simpleNodes[8], simpleNodes[9]);
+        });
+        
+        function connectNodes(svg, source, target) {
+            const sourceBBox = source.getBoundingClientRect();
+            const targetBBox = target.getBoundingClientRect();
+            const svgRect = svg.getBoundingClientRect();
+            
+            // Calculate center points
+            const sourceX = sourceBBox.left + sourceBBox.width/2 - svgRect.left;
+            const sourceY = sourceBBox.bottom - svgRect.top;
+            const targetX = targetBBox.left + targetBBox.width/2 - svgRect.left;
+            const targetY = targetBBox.top - svgRect.top;
+            
+            // Create path
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            
+            // Simple curved path
+            const midY = (sourceY + targetY) / 2;
+            const pathData = `M${sourceX},${sourceY} C${sourceX},${midY} ${targetX},${midY} ${targetX},${targetY}`;
+            
+            path.setAttribute('d', pathData);
+            path.setAttribute('marker-end', 'url(#arrowhead)');
+            svg.appendChild(path);
+        }
+    </script>
+</body>
+</html> 

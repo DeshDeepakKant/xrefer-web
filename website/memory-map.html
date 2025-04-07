@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XRefer - Memory Map</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: monospace;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background-color: #222;
+            color: #e0e0e0;
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .nav-links {
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-links span {
+            margin: 0 10px;
+            color: #0c0;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .summary-header {
+            font-size: 0.9em;
+            color: #ccc;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .highlight-red {
+            color: #f55;
+        }
+        
+        .highlight-green {
+            color: #5f5;
+        }
+        
+        .highlight-blue {
+            color: #55f;
+        }
+        
+        .highlight-yellow {
+            color: #ff5;
+        }
+        
+        .highlight-cyan {
+            color: #5ff;
+        }
+        
+        .memory-map-container {
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+        }
+        
+        .memory-region {
+            display: flex;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .region-address {
+            width: 140px;
+            padding: 5px;
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .region-bar {
+            height: 25px;
+            background-color: #333;
+            margin: 0 10px;
+            position: relative;
+            flex-grow: 1;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .executable-region {
+            background-color: #353;
+        }
+        
+        .readonly-region {
+            background-color: #335;
+        }
+        
+        .writeable-region {
+            background-color: #533;
+        }
+        
+        .heap-region {
+            background-color: #553;
+        }
+        
+        .stack-region {
+            background-color: #535;
+        }
+        
+        .region-label {
+            position: absolute;
+            left: 15px;
+            top: 5px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8em;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            max-width: 300px;
+            overflow: hidden;
+        }
+        
+        .region-info {
+            width: 200px;
+            padding: 5px;
+            font-size: 0.8em;
+            color: #aaa;
+        }
+        
+        .region-size {
+            color: #ccc;
+        }
+        
+        .memory-marker {
+            position: absolute;
+            width: 1px;
+            height: 25px;
+            background-color: #f55;
+            z-index: 10;
+        }
+        
+        .marker-label {
+            position: absolute;
+            font-size: 0.7em;
+            color: #f55;
+            white-space: nowrap;
+            transform: translateY(-15px);
+        }
+        
+        .memory-activity {
+            position: absolute;
+            height: 100%;
+            opacity: 0.7;
+        }
+        
+        .read-activity {
+            background-color: rgba(85, 85, 255, 0.6);
+        }
+        
+        .write-activity {
+            background-color: rgba(255, 85, 85, 0.6);
+        }
+        
+        .execute-activity {
+            background-color: rgba(85, 255, 85, 0.6);
+        }
+        
+        .memory-scale {
+            display: flex;
+            margin: 5px 0 20px 150px;
+            width: calc(100% - 350px);
+            position: relative;
+            height: 20px;
+        }
+        
+        .scale-marker {
+            position: absolute;
+            width: 1px;
+            height: 5px;
+            background-color: #777;
+            bottom: 0;
+        }
+        
+        .scale-label {
+            position: absolute;
+            font-size: 0.7em;
+            color: #777;
+            transform: translateX(-50%) translateY(-15px);
+        }
+        
+        .legend {
+            display: flex;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav-links">
+            <span>[ XRefer ]</span>
+            <span>[ Memory Map ]</span>
+            <span>[ Binary: sample_malware.exe ]</span>
+            <span>[ H for help ]</span>
+        </div>
+    </div>
+    
+    <div class="content">
+        <div class="summary-header">
+            MEMORY MAP REGIONS = <span class="highlight-green">24</span> (TOTAL SIZE: <span class="highlight-blue">9.47 MB</span>)
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #353;"></div>
+                <span>Executable</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #335;"></div>
+                <span>Read-Only</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #533;"></div>
+                <span>Writeable</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #553;"></div>
+                <span>Heap</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #535;"></div>
+                <span>Stack</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(85, 85, 255, 0.6);"></div>
+                <span>Read Activity</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(255, 85, 85, 0.6);"></div>
+                <span>Write Activity</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: rgba(85, 255, 85, 0.6);"></div>
+                <span>Execute Activity</span>
+            </div>
+        </div>
+        
+        <div class="memory-scale">
+            <div class="scale-marker" style="left: 0%;">
+                <div class="scale-label">0x00000000</div>
+            </div>
+            <div class="scale-marker" style="left: 25%;">
+                <div class="scale-label">0x40000000</div>
+            </div>
+            <div class="scale-marker" style="left: 50%;">
+                <div class="scale-label">0x80000000</div>
+            </div>
+            <div class="scale-marker" style="left: 75%;">
+                <div class="scale-label">0xC0000000</div>
+            </div>
+            <div class="scale-marker" style="left: 100%;">
+                <div class="scale-label">0xFFFFFFFF</div>
+            </div>
+        </div>
+        
+        <div class="memory-map-container">
+            <!-- Image Base -->
+            <div class="memory-region">
+                <div class="region-address">0x00100000</div>
+                <div class="region-bar executable-region" style="width: 30%;">
+                    <div class="region-label">sample_malware.exe (.text)</div>
+                    <div class="memory-activity execute-activity" style="width: 80%; left: 0%;"></div>
+                    <div class="memory-activity read-activity" style="width: 20%; left: 82%;"></div>
+                </div>
+                <div class="region-info">
+                    <div>RWX (Executable)</div>
+                    <div class="region-size">512.0 KB</div>
+                </div>
+            </div>
+            
+            <div class="memory-region">
+                <div class="region-address">0x00180000</div>
+                <div class="region-bar readonly-region" style="width: 10%;">
+                    <div class="region-label">sample_malware.exe (.rdata)</div>
+                    <div class="memory-activity read-activity" style="width: 90%; left: 5%;"></div>
+                </div>
+                <div class="region-info">
+                    <div>R-- (Read-Only)</div>
+                    <div class="region-size">128.0 KB</div>
+                </div>
+            </div>
+            
+            <div class="memory-region">
+                <div class="region-address">0x001A0000</div>
+                <div class="region-bar writeable-region" style="width: 4%;">
+                    <div class="region-label">sample_malware.exe (.data)</div>
+                    <div class="memory-activity write-activity" style="width: 70%; left: 15%;"></div>
+                    <div class="memory-activity read-activity" style="width: 50%; left: 20%;"></div>
+                </div>
+                <div class="region-info">
+                    <div>RW- (Writeable)</div>
+                    <div class="region-size">64.0 KB</div>
+                </div>
+            </div>
+            
+            <!-- Heap -->
+            <div class="memory-region">
+                <div class="region-address">0x00A50000</div>
+                <div class="region-bar heap-region" style="width: 12%;">
+                    <div class="region-label">Heap [ID: 0x14]</div>
+                    <div class="memory-activity write-activity" style="width: 45%; left: 20%;"></div>
+                    <div class="memory-activity read-activity" style="width: 30%; left: 10%;"></div>
+                </div>
+                <div class="region-info">
+                    <div>RW- (Heap)</div>
+                    <div class="region-size">256.0 KB</div>
+                </div>
+            </div>
+            
+            <!-- Libraries -->
+            <div class="memory-region">
+                <div class="region-address">0x75A30000</div>
+                <div class="region-bar executable-region" style="width: 15%;">
+                    <div class="region-label">kernel32.dll (.text)</div>
+                    <div class="memory-activity execute-activity" style="width: 15%; left: 30%;"></div>
+                </div>
+                <div class="region-info">
+                    <div>R-X (DLL Code)</div>
+                    <div class="region-size">192.0 KB</div>
+                </div>
+            </div>
+            
+            <div class="memory-region">
+                <div class="region-address">0x76F20000</div>
+                <div class="region-bar executable-region" style="width: 12%;">
+                    <div class="region-label">ntdll.dll (.text)</div>
+                    <div class="memory-activity execute-activity" style="width: 10%; left: 40%;"></div>
+                </div>
+                <div class="region-info">
+                    <div>R-X (DLL Code)</div>
+                    <div class="region-size">256.0 KB</div>
+                </div>
+            </div>
+            
+            <div class="memory-region">
+                <div class="region-address">0x77A80000</div>
+                <div class="region-bar executable-region" style="width: 8%;">
+                    <div class="region-label">wininet.dll (.text)</div>
+                    <div class="memory-activity execute-activity" style="width: 25%; left: 15%;"></div>
+                </div>
+                <div class="region-info">
+                    <div>R-X (DLL Code)</div>
+                    <div class="region-size">128.0 KB</div>
+                </div>
+            </div>
+            
+            <div class="memory-region">
+                <div class="region-address">0x75520000</div>
+                <div class="region-bar executable-region" style="width: 6%;">
+                    <div class="region-label">netapi32.dll (.text)</div>
+                    <div class="memory-activity execute-activity" style="width: 8%; left: 20%;"></div>
+                </div>
+                <div class="region-info">
+                    <div>R-X (DLL Code)</div>
+                    <div class="region-size">96.0 KB</div>
+                </div>
+            </div>
+            
+            <!-- Stack -->
+            <div class="memory-region">
+                <div class="region-address">0x00F30000</div>
+                <div class="region-bar stack-region" style="width: 4%;">
+                    <div class="region-label">Thread Stack [TID: 1844]</div>
+                    <div class="memory-activity write-activity" style="width: 20%; left: 70%;"></div>
+                    <div class="memory-activity read-activity" style="width: 15%; left: 75%;"></div>
+                </div>
+                <div class="region-info">
+                    <div>RW- (Stack)</div>
+                    <div class="region-size">64.0 KB</div>
+                </div>
+            </div>
+            
+            <!-- Markers for important addresses -->
+            <div class="memory-region">
+                <div class="region-address">0x00100D40</div>
+                <div class="region-bar" style="background-color: transparent; height: 1px; margin-top: 12px;">
+                    <div class="memory-marker" style="left: 0.5%; background-color: #f55;">
+                        <div class="marker-label">Entry Point</div>
+                    </div>
+                </div>
+                <div class="region-info"></div>
+            </div>
+            
+            <div class="memory-region">
+                <div class="region-address">0x00108760</div>
+                <div class="region-bar" style="background-color: transparent; height: 1px; margin-top: 12px;">
+                    <div class="memory-marker" style="left: 3%; background-color: #5f5;">
+                        <div class="marker-label">HTTP Connect Function</div>
+                    </div>
+                </div>
+                <div class="region-info"></div>
+            </div>
+            
+            <div class="memory-region">
+                <div class="region-address">0x001A4F30</div>
+                <div class="region-bar" style="background-color: transparent; height: 1px; margin-top: 12px;">
+                    <div class="memory-marker" style="left: 6.2%; background-color: #55f;">
+                        <div class="marker-label">Config Data</div>
+                    </div>
+                </div>
+                <div class="region-info"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // This would be where we'd add interaction like hover details
+        // or zoom functionality in a real implementation
+    </script>
+</body>
+</html> 
